@@ -116,6 +116,3 @@ git checkout -b minha-feature
 ## Licença
 
 Este projeto é licenciado sob a licença MIT.
-
----
-# Tradutor-de-libras
