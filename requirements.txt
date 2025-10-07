@@ -1,0 +1,20 @@
+# Visão Computacional
+opencv-python==4.8.1.78
+mediapipe==0.10.8
+
+# Machine Learning
+scikit-learn==1.3.2
+numpy==1.24.3
+pandas==2.1.4
+
+# Interface Gráfica
+streamlit==1.29.0
+
+# Utilitários
+python-dotenv==1.0.0
+pillow==10.1.0
+
+# Desenvolvimento
+pytest==7.4.3
+jupyter==1.0.0
+notebook==7.0.6

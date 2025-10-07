@@ -1,0 +1,33 @@
+# Ambiente virtual
+venv/
+env/
+*.pyc
+__pycache__/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# Modelos treinados (caso sejam grandes)
+models/*.tflite
+models/*.h5
+
+# Dados temporários ou uploads
+data/
+*.csv
+*.zip
+*.tmp
+
+# Arquivos de configuração locais
+.env
+
