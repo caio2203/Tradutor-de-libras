@@ -1,345 +1,309 @@
 """
-Aplicação principal - Tradutor de Libras em Tempo Real.
-Integra webcam, detecção de mãos e classificação.
+Aplicação principal usando Deep Learning
+Substitui o main.py original com Random Forest
 """
+
 import cv2
 import numpy as np
-from capture.webcam import WebcamCapture
-from vision.mediapipe_handler import HandDetector
-from inference.classifier import LibrasClassifier
-from collections import deque
+import mediapipe as mp
+from inference.dl_classifier import create_classifier
 import time
 
 
-class LibrasTranslator:
-    """Sistema completo de tradução de Libras em tempo real."""
+class LibrasTranslatorDL:
+    """
+    Sistema de tradução LIBRAS em tempo real com Deep Learning
+    """
     
-    def __init__(self):
-        """Inicializa o tradutor."""
-        self.webcam = WebcamCapture()
-        self.detector = HandDetector()
-        self.classifier = LibrasClassifier()
+    def __init__(self, model_type='cnn_lstm', use_ensemble=False):
+        """
+        Args:
+            model_type: 'mlp', 'lstm', 'cnn_lstm' ou 'ensemble'
+            use_ensemble: Se True, usa ensemble de modelos
+        """
+        print("Inicializando Tradutor LIBRAS com Deep Learning...")
         
-        # Buffer para estabilizar predições
-        self.prediction_buffer = deque(maxlen=10)
-        self.confidence_threshold = 0.7
+        # MediaPipe Hands
+        self.mp_hands = mp.solutions.hands
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=1,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.5
+        )
         
-        # Histórico de letras detectadas
-        self.detected_text = ""
-        self.last_letter = None
-        self.last_letter_time = 0
-        self.letter_cooldown = 1.0  # segundos entre detecções da mesma letra
+        # Classificador Deep Learning
+        print(f"Carregando modelo: {model_type if not use_ensemble else 'ensemble'}...")
+        self.classifier = create_classifier(model_type, use_ensemble)
         
-        # Estatísticas
+        # Estado
+        self.current_letter = None
+        self.confidence = 0.0
         self.fps = 0
         self.frame_count = 0
         self.start_time = time.time()
-    
-    def initialize(self) -> bool:
-        """
-        Inicializa todos os componentes.
         
-        Returns:
-            True se inicializou com sucesso
-        """
-        print("🚀 Inicializando Tradutor de Libras...")
-        
-        # Carregar modelo
-        if not self.classifier.load_model():
-            return False
-        
-        # Iniciar webcam
-        if not self.webcam.start():
-            return False
+        # Configurações visuais
+        self.show_landmarks = True
+        self.show_top_k = True
+        self.confidence_threshold = 0.6
         
         print("✅ Sistema inicializado com sucesso!")
-        print("\n📋 INSTRUÇÕES:")
-        print("  - Faça sinais com a mão em frente à câmera")
-        print("  - Mantenha o sinal por 1 segundo para registrar")
-        print("  - Pressione ESPAÇO para limpar o texto")
-        print("  - Pressione BACKSPACE para apagar última letra")
-        print("  - Pressione 'q' para sair")
-        print("\n" + "="*60)
-        
-        return True
     
-    def process_frame(self, frame):
+    def extract_landmarks(self, hand_landmarks):
         """
-        Processa um frame e faz predição.
+        Extrai e normaliza landmarks da mão
         
         Args:
-            frame: Frame da webcam
+            hand_landmarks: Landmarks do MediaPipe
             
         Returns:
-            Frame anotado com informações
+            Array (63,) com coordenadas normalizadas
         """
-        # Detectar mão
-        annotated_frame, landmarks_list = self.detector.detect_hands(frame)
+        landmarks = []
         
-        current_prediction = None
-        confidence = 0.0
+        # Ponto de referência (pulso)
+        wrist = hand_landmarks.landmark[0]
+        wrist_x, wrist_y, wrist_z = wrist.x, wrist.y, wrist.z
         
-        if landmarks_list:
-            # Extrair landmarks normalizados
-            landmarks = self.detector.extract_landmarks_array(landmarks_list)
-            
-            # Fazer predição
-            result = self.classifier.predict(landmarks)
-            
-            if result:
-                letter, conf = result
-                current_prediction = letter
-                confidence = conf
-                
-                # Adicionar ao buffer
-                if conf >= self.confidence_threshold:
-                    self.prediction_buffer.append(letter)
-        else:
-            # Limpar buffer se não detectou mão
-            self.prediction_buffer.clear()
+        # Normalizar todos os landmarks em relação ao pulso
+        for landmark in hand_landmarks.landmark:
+            landmarks.extend([
+                landmark.x - wrist_x,
+                landmark.y - wrist_y,
+                landmark.z - wrist_z
+            ])
         
-        # Obter predição estável (moda do buffer)
-        stable_prediction = self._get_stable_prediction()
-        
-        # Registrar letra se estável
-        if stable_prediction and confidence >= self.confidence_threshold:
-            self._register_letter(stable_prediction)
-        
-        # Desenhar interface
-        self._draw_ui(
-            annotated_frame, 
-            current_prediction, 
-            confidence, 
-            stable_prediction,
-            landmarks_list is not None
-        )
-        
-        return annotated_frame
+        return np.array(landmarks)
     
-    def _get_stable_prediction(self):
+    def draw_info_panel(self, frame, letter, confidence, fps, top_k=None):
         """
-        Obtém predição estável do buffer.
-        Retorna a letra mais comum se houver consenso.
+        Desenha painel de informações na tela
+        
+        Args:
+            frame: Frame do vídeo
+            letter: Letra predita
+            confidence: Confiança da predição
+            fps: Frames por segundo
+            top_k: Lista de top-k predições
         """
-        if len(self.prediction_buffer) < 5:
-            return None
-        
-        # Contar ocorrências
-        from collections import Counter
-        counts = Counter(self.prediction_buffer)
-        most_common = counts.most_common(1)[0]
-        
-        letter, count = most_common
-        
-        # Exigir que pelo menos 70% do buffer concorde
-        if count >= len(self.prediction_buffer) * 0.7:
-            return letter
-        
-        return None
-    
-    def _register_letter(self, letter: str):
-        """
-        Registra uma letra detectada no texto.
-        Aplica cooldown para evitar repetições.
-        """
-        current_time = time.time()
-        
-        # Verificar cooldown
-        if letter == self.last_letter:
-            if current_time - self.last_letter_time < self.letter_cooldown:
-                return
-        
-        # Registrar letra
-        self.detected_text += letter
-        self.last_letter = letter
-        self.last_letter_time = current_time
-        
-        print(f"📝 Letra detectada: {letter} | Texto: {self.detected_text}")
-    
-    def _draw_ui(self, frame, prediction, confidence, stable, hand_detected):
-        """Desenha interface de usuário no frame."""
         h, w = frame.shape[:2]
         
-        # Fundo semi-transparente
+        # Painel semi-transparente
         overlay = frame.copy()
-        
-        # Painel superior
-        cv2.rectangle(overlay, (0, 0), (w, 120), (0, 0, 0), -1)
+        cv2.rectangle(overlay, (10, 10), (w-10, 200), (0, 0, 0), -1)
         cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
         
-        # Texto detectado (grande)
-        text_to_show = self.detected_text if self.detected_text else "..."
-        cv2.putText(
-            frame, 
-            f"Texto: {text_to_show}", 
-            (20, 50),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.2,
-            (0, 255, 0) if self.detected_text else (150, 150, 150),
-            2
-        )
-        
-        # Status da detecção
-        if hand_detected:
-            status_text = f"Mao detectada"
-            status_color = (0, 255, 0)
+        # Letra reconhecida (grande)
+        if letter:
+            # Cor baseada na confiança
+            if confidence > 0.8:
+                color = (0, 255, 0)  # Verde
+            elif confidence > 0.6:
+                color = (0, 255, 255)  # Amarelo
+            else:
+                color = (0, 165, 255)  # Laranja
+            
+            cv2.putText(frame, letter, (30, 100), 
+                       cv2.FONT_HERSHEY_BOLD, 3.0, color, 4)
+            
+            # Confiança
+            conf_text = f"Confianca: {confidence:.1%}"
+            cv2.putText(frame, conf_text, (30, 140),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         else:
-            status_text = "Nenhuma mao detectada"
-            status_color = (0, 0, 255)
-        
-        cv2.putText(frame, status_text, (20, 90), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, status_color, 2)
-        
-        # Painel lateral direito
-        cv2.rectangle(overlay, (w-250, 0), (w, h), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
-        
-        # Predição atual
-        y_offset = 40
-        if prediction:
-            cv2.putText(
-                frame,
-                f"Letra: {prediction}",
-                (w-230, y_offset),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.5,
-                (0, 255, 255),
-                3
-            )
-            
-            # Barra de confiança
-            y_offset += 50
-            cv2.putText(
-                frame,
-                f"Confianca: {confidence*100:.0f}%",
-                (w-230, y_offset),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (255, 255, 255),
-                1
-            )
-            
-            # Barra visual
-            y_offset += 10
-            bar_width = int(200 * confidence)
-            cv2.rectangle(
-                frame,
-                (w-230, y_offset),
-                (w-230 + bar_width, y_offset + 20),
-                (0, 255, 0) if confidence >= self.confidence_threshold else (0, 165, 255),
-                -1
-            )
-            cv2.rectangle(
-                frame,
-                (w-230, y_offset),
-                (w-30, y_offset + 20),
-                (255, 255, 255),
-                1
-            )
-            
-            # Status de estabilidade
-            y_offset += 50
-            if stable:
-                cv2.putText(
-                    frame,
-                    "✓ ESTAVEL",
-                    (w-230, y_offset),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (0, 255, 0),
-                    2
-                )
+            cv2.putText(frame, "Aguardando...", (30, 100),
+                       cv2.FONT_HERSHEY_SIMPLEX, 1.0, (128, 128, 128), 2)
         
         # FPS
-        cv2.putText(
-            frame,
-            f"FPS: {self.fps:.1f}",
-            (w-230, h-20),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (255, 255, 255),
-            1
-        )
+        fps_text = f"FPS: {fps:.1f}"
+        cv2.putText(frame, fps_text, (30, 170),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        
+        # Top-K predições (se disponível)
+        if top_k and self.show_top_k:
+            y_offset = 220
+            cv2.putText(frame, "Top 3:", (30, y_offset),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            
+            for i, (letra, prob) in enumerate(top_k[:3]):
+                y_offset += 30
+                text = f"{i+1}. {letra}: {prob:.1%}"
+                cv2.putText(frame, text, (30, y_offset),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
         
         # Instruções
         instructions = [
-            "ESPACO: Limpar",
-            "BACKSPACE: Apagar",
-            "Q: Sair"
+            "Comandos:",
+            "ESC - Sair",
+            "R - Reset buffers",
+            "L - Toggle landmarks",
+            "T - Toggle top-k"
         ]
-        y_pos = h - 100
-        for inst in instructions:
-            cv2.putText(
-                frame,
-                inst,
-                (w-230, y_pos),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.4,
-                (200, 200, 200),
-                1
-            )
-            y_pos += 20
+        
+        y_start = h - 150
+        for i, text in enumerate(instructions):
+            cv2.putText(frame, text, (30, y_start + i*25),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+    
+    def process_frame(self, frame):
+        """
+        Processa um frame e retorna predição
+        
+        Args:
+            frame: Frame BGR do OpenCV
+            
+        Returns:
+            frame: Frame processado com visualizações
+        """
+        # Converter para RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Detectar mãos
+        results = self.hands.process(rgb_frame)
+        
+        # Resetar predição
+        letter = None
+        confidence = 0.0
+        top_k = []
+        
+        if results.multi_hand_landmarks:
+            for hand_landmarks in results.multi_hand_landmarks:
+                # Desenhar landmarks (opcional)
+                if self.show_landmarks:
+                    self.mp_drawing.draw_landmarks(
+                        frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS,
+                        self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2),
+                        self.mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2)
+                    )
+                
+                # Extrair landmarks
+                landmarks = self.extract_landmarks(hand_landmarks)
+                
+                # Predição suavizada
+                letter, confidence = self.classifier.predict_smoothed(
+                    landmarks, 
+                    confidence_threshold=self.confidence_threshold
+                )
+                
+                # Top-K (apenas se MLP)
+                if hasattr(self.classifier, 'model_type') and self.classifier.model_type == 'mlp':
+                    top_k = self.classifier.get_top_k_predictions(landmarks, k=3)
+        
+        # Atualizar estado
+        self.current_letter = letter
+        self.confidence = confidence if letter else 0.0
+        
+        # Calcular FPS
+        self.frame_count += 1
+        elapsed = time.time() - self.start_time
+        if elapsed > 0:
+            self.fps = self.frame_count / elapsed
+        
+        # Desenhar informações
+        self.draw_info_panel(frame, letter, confidence, self.fps, top_k)
+        
+        return frame
     
     def run(self):
-        """Executa o loop principal da aplicação."""
-        if not self.initialize():
-            print("❌ Falha na inicialização")
+        """
+        Loop principal da aplicação
+        """
+        print("\n" + "="*60)
+        print("INICIANDO TRADUTOR LIBRAS - DEEP LEARNING")
+        print("="*60)
+        print("Pressione ESC para sair")
+        print("Pressione R para resetar buffers")
+        print("Pressione L para toggle landmarks")
+        print("Pressione T para toggle top-k\n")
+        
+        # Abrir webcam
+        cap = cv2.VideoCapture(0)
+        
+        if not cap.isOpened():
+            print("❌ Erro: Não foi possível abrir a webcam")
             return
+        
+        # Configurar resolução
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         
         try:
             while True:
-                # Ler frame
-                ret, frame = self.webcam.read_frame()
+                # Capturar frame
+                ret, frame = cap.read()
                 
                 if not ret:
+                    print("❌ Erro ao capturar frame")
                     break
+                
+                # Espelhar horizontalmente
+                frame = cv2.flip(frame, 1)
                 
                 # Processar frame
-                annotated_frame = self.process_frame(frame)
+                frame = self.process_frame(frame)
                 
-                # Calcular FPS
-                self.frame_count += 1
-                elapsed = time.time() - self.start_time
-                if elapsed > 0:
-                    self.fps = self.frame_count / elapsed
+                # Mostrar
+                cv2.imshow('LIBRAS Translator - Deep Learning', frame)
                 
-                # Mostrar frame
-                cv2.imshow("Tradutor de Libras - Tempo Real", annotated_frame)
-                
-                # Processar teclas
+                # Comandos do teclado
                 key = cv2.waitKey(1) & 0xFF
                 
-                # Sair
-                if key == ord('q'):
+                if key == 27:  # ESC
+                    print("\n👋 Encerrando aplicação...")
                     break
                 
-                # Limpar texto
-                elif key == 32:  # ESPAÇO
-                    self.detected_text = ""
-                    print("🗑️  Texto limpo")
+                elif key == ord('r') or key == ord('R'):  # Reset
+                    print("🔄 Resetando buffers...")
+                    self.classifier.reset_buffers()
+                    self.frame_count = 0
+                    self.start_time = time.time()
                 
-                # Apagar última letra
-                elif key == 8:  # BACKSPACE
-                    if self.detected_text:
-                        self.detected_text = self.detected_text[:-1]
-                        print(f"⬅️  Apagado | Texto: {self.detected_text}")
+                elif key == ord('l') or key == ord('L'):  # Toggle landmarks
+                    self.show_landmarks = not self.show_landmarks
+                    print(f"Landmarks: {'ON' if self.show_landmarks else 'OFF'}")
+                
+                elif key == ord('t') or key == ord('T'):  # Toggle top-k
+                    self.show_top_k = not self.show_top_k
+                    print(f"Top-K: {'ON' if self.show_top_k else 'OFF'}")
         
         finally:
-            self.cleanup()
+            # Liberar recursos
+            cap.release()
+            cv2.destroyAllWindows()
+            self.hands.close()
+            
+            # Estatísticas finais
+            print("\n" + "="*60)
+            print("ESTATÍSTICAS DA SESSÃO")
+            print("="*60)
+            print(f"Frames processados: {self.frame_count}")
+            print(f"FPS médio: {self.fps:.2f}")
+            print(f"Tempo total: {time.time() - self.start_time:.2f}s")
+            print("\n✅ Aplicação encerrada com sucesso!")
+
+
+def main():
+    """Função principal"""
+    import argparse
     
-    def cleanup(self):
-        """Limpa recursos."""
-        print("\n🧹 Limpando recursos...")
-        self.webcam.stop()
-        self.detector.close()
-        cv2.destroyAllWindows()
-        
-        if self.detected_text:
-            print(f"\n📝 Texto final: {self.detected_text}")
-        
-        print("✅ Encerrado com sucesso!")
+    parser = argparse.ArgumentParser(description='Tradutor LIBRAS com Deep Learning')
+    parser.add_argument('--model', type=str, default='cnn_lstm',
+                       choices=['mlp', 'lstm', 'cnn_lstm', 'ensemble'],
+                       help='Tipo de modelo a usar')
+    parser.add_argument('--ensemble', action='store_true',
+                       help='Usar ensemble de modelos')
+    
+    args = parser.parse_args()
+    
+    # Criar e executar aplicação
+    app = LibrasTranslatorDL(
+        model_type=args.model,
+        use_ensemble=args.ensemble
+    )
+    app.run()
 
 
 if __name__ == "__main__":
-    translator = LibrasTranslator()
-    translator.run()
+    main()
