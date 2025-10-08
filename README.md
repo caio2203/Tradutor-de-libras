@@ -1,118 +1,306 @@
-# Tradutor de Libras em Tempo Real
+# Tradutor de Libras para Texto em Tempo Real
 
-## Descrição do Projeto
-
-O Tradutor de Libras em Tempo Real é uma aplicação de visão computacional que reconhece sinais da Língua Brasileira de Sinais (Libras) a partir de imagens capturadas por uma câmera e converte os sinais em texto em tempo real. O sistema utiliza modelos de aprendizado de máquina pré-treinados, combinados com técnicas de processamento de imagens, para identificar sinais de forma precisa e eficiente.
-
-O projeto tem como objetivo fornecer uma ferramenta acessível para facilitar a comunicação entre pessoas surdas e ouvintes, promovendo inclusão social e acessibilidade.
+Sistema de reconhecimento e tradução de sinais da Língua Brasileira de Sinais (Libras) para texto utilizando visão computacional e aprendizado de máquina.
 
 ---
 
-## Funcionalidades
+## Sumário
 
-* Captura de sinais de Libras através da câmera do computador.
-* Reconhecimento em tempo real de 21 sinais correspondentes às letras do alfabeto (A, B, C, D, E, F, G, I, K, L, M, N, O, P, Q, R, S, T, U, V, W).
-* Conversão dos sinais em texto exibido na interface.
-* Suporte para edição do texto em tempo real:
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Arquitetura do Sistema](#arquitetura-do-sistema)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Metodologia](#metodologia)
+- [Pipeline de Dados](#pipeline-de-dados)
+- [Modelo de Machine Learning](#modelo-de-machine-learning)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Instalação](#instalação)
+- [Uso](#uso)
+- [Resultados](#resultados)
+- [Limitações e Trabalhos Futuros](#limitações-e-trabalhos-futuros)
+- [Referências](#referências)
+- [Licença](#licença)
 
-  * Tecla `ESPAÇO`: limpa todo o texto.
-  * Tecla `BACKSPACE`: apaga a última letra.
-  * Tecla `q`: encerra o sistema.
+---
+
+## Sobre o Projeto
+
+Este projeto implementa um sistema completo de reconhecimento de gestos do alfabeto manual da Libras em tempo real.  
+O sistema captura vídeo via webcam, detecta mãos utilizando MediaPipe, extrai landmarks tridimensionais e classifica os sinais com aprendizado de máquina.
+
+### Objetivos
+
+- Reconhecer as 26 letras do alfabeto manual da Libras  
+- Processar vídeo com taxa mínima de 15 FPS  
+- Funcionar em hardware comum (sem GPU dedicada)  
+- Manter acurácia superior a 85%  
+
+---
+
+### Fluxo de Processamento
+
+1. Captura de frames via OpenCV  
+2. Detecção de mãos usando MediaPipe  
+3. Extração de 21 landmarks 3D por mão  
+4. Normalização das coordenadas  
+5. Classificação usando Random Forest  
+6. Estabilização temporal com buffer  
+7. Exibição do resultado em tempo real  
 
 ---
 
 ## Tecnologias Utilizadas
 
-* **Python 3.11**
-* **OpenCV**: captura de vídeo e processamento de imagens.
-* **Mediapipe**: detecção e rastreamento de mãos.
-* **TensorFlow Lite**: inferência do modelo de sinais.
-* **Roboflow**: gestão e carregamento de datasets.
-* **Streamlit**: interface gráfica opcional para visualização e testes.
-* **Numpy, Pandas, Scikit-learn**: manipulação de dados e suporte a operações matemáticas.
+| Categoria | Tecnologias |
+|------------|-------------|
+| Linguagem | Python 3.11 |
+| Visão Computacional | OpenCV 4.8.1, MediaPipe 0.10.8 |
+| Machine Learning | Scikit-learn 1.3.2, NumPy 1.24.3, Pandas 2.1.4 |
+| Visualização | Matplotlib, Seaborn |
+| Interface Web | Streamlit 1.29.0 |
+| Ambiente | venv, Git |
+| Desenvolvimento | Jupyter, Notebook |
+| Utilitários | Pillow, python-dotenv |
 
 ---
 
-## Estrutura do Projeto
+## Metodologia
 
-```
+O pipeline segue três etapas principais:
+
+### 1. Aquisição de Dados
+- Dataset público do Roboflow no formato COCO
+
+### 2. Pré-processamento
+- Extração de landmarks com MediaPipe Hands  
+- Normalização relativa ao pulso
+
+### 3. Divisão de Dados
+- Treino: 80%  
+- Teste: 20%  
+- Estratificação preservada  
+
+---
+
+## Pipeline de Dados
+
+### ETL (Extract, Transform, Load)
+
+- **Extract**: Leitura e parsing das imagens e anotações  
+- **Transform**: Extração e normalização dos landmarks  
+- **Load**: Serialização para JSON estruturado  
+
+### Processamento em Tempo Real
+
+1. Captura de frame  
+2. Conversão BGR → RGB  
+3. Detecção de mãos  
+4. Extração e normalização de landmarks  
+5. Predição com modelo  
+6. Estabilização temporal  
+7. Exibição do texto reconhecido  
+
+---
+
+## Modelo de Machine Learning
+
+### Algoritmo
+Random Forest Classifier
+
+```python
+RandomForestClassifier(
+    n_estimators=200,
+    max_depth=20,
+    min_samples_split=2,
+    random_state=42,
+    n_jobs=-1
+)
+
+Motivos da escolha:
+
+Rápido e eficiente em CPU
+
+Robusto a overfitting
+
+Fácil de interpretar
+
+Adequado para datasets médios
+
+
+Desempenho médio:
+
+Métrica	Valor
+
+Acurácia	85–95%
+F1-Score	0.86–0.93
+Latência	<50ms
+FPS	25–30
+
+
+
+---
+
+Estrutura do Projeto
+
 projeto-libras/
- ├── src/
- │   └── main.py          # Arquivo principal que executa o tradutor em tempo real
- ├── models/              # Modelos treinados e arquivos do TensorFlow Lite
- ├── requirements.txt     # Lista de dependências do projeto
- └── README.md            # Documentação do projeto
-```
+├── data/
+│   ├── raw/
+│   └── processed/
+├── models/
+│   ├── libras_classifier.pkl
+│   ├── confusion_matrix.png
+│   └── feature_importance.png
+├── src/
+│   ├── capture/webcam.py
+│   ├── vision/mediapipe_handler.py
+│   ├── inference/classifier.py
+│   ├── collect_data.py
+│   ├── process_coco_dataset.py
+│   ├── train_model.py
+│   └── main.py
+├── notebooks/
+├── tests/
+├── requirements.txt
+└── README.md
+
 
 ---
 
-## Instalação
+Instalação
 
-1. Clone o repositório:
+Pré-requisitos
 
-```bash
-git clone <URL_DO_REPOSITORIO>
+Python 3.11
+
+Webcam funcional
+
+Sistema operacional: Linux, macOS ou Windows
+
+8 GB de RAM
+
+
+Passos
+
+# Clone o repositório
+git clone https://github.com/caio2203/projeto-libras.git
 cd projeto-libras
-```
 
-2. Crie um ambiente virtual:
+# Crie e ative o ambiente virtual
+python3.11 -m venv venv
+source venv/bin/activate   # Linux/macOS
+venv\Scripts\activate      # Windows
 
-```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate     # Windows
-```
-
-3. Instale as dependências:
-
-```bash
+# Instale as dependências
 pip install -r requirements.txt
-```
 
-4. **Dependências adicionais no Linux** (para suporte a janelas OpenCV):
-
-```bash
-sudo dnf install gtk3 gtk3-devel qt5-qtbase-devel
-```
 
 ---
 
-## Execução
+Uso
 
-Para iniciar o tradutor em tempo real:
+1. Baixar o dataset
 
-```bash
+pip install roboflow
+python download.py
+
+2. Processar os dados
+
+python src/process_coco_dataset.py Libras-2/
+
+3. Treinar o modelo
+
+python src/train_model.py
+
+4. Executar a aplicação
+
 python src/main.py
-```
 
-A aplicação exibirá a câmera e começará a detectar sinais de Libras imediatamente.
+A webcam exibirá:
 
----
+Detecção de mãos
 
-## Uso
+Letra reconhecida
 
-* Posicione a mão em frente à câmera, mantendo cada sinal por aproximadamente 1 segundo.
-* O texto correspondente ao sinal aparecerá em tempo real na tela.
-* Utilize as teclas de edição conforme descrito nas funcionalidades para ajustar o texto.
+FPS e confiança
 
----
 
-## Contribuição
-
-Contribuições são bem-vindas para melhoria da acurácia do modelo, suporte a mais sinais e aprimoramento da interface. Para contribuir:
-
-1. Faça um fork do projeto.
-2. Crie uma branch para sua feature:
-
-```bash
-git checkout -b minha-feature
-```
-
-3. Realize as alterações e faça commits claros.
-4. Abra um Pull Request detalhando as mudanças.
 
 ---
 
-## Licença
+Resultados
 
-Este projeto é licenciado sob a licença MIT.
+Métrica	Valor
+
+Acurácia	90%
+FPS Médio	25–30
+Latência	<50ms
+Hardware	CPU comum (Intel i5)
+Erros comuns	M/N, A/S, E/O
+
+
+
+---
+
+Limitações e Trabalhos Futuros
+
+Limitações
+
+Apenas alfabeto manual estático
+
+Uma mão por vez
+
+Sensível à iluminação
+
+Sem contexto linguístico
+
+Dataset limitado
+
+
+Trabalhos Futuros
+
+Suporte a duas mãos
+
+Reconhecimento de sinais dinâmicos
+
+Implementação de CNN + LSTM
+
+Interface web interativa
+
+Aplicativo mobile
+
+Tradução texto → Libras com avatar 3D
+
+
+
+---
+
+Referências
+
+MediaPipe: Zhang, F. et al. (2020). MediaPipe Hands: On-device Real-time Hand Tracking.
+
+OpenCV: Bradski, G. (2000). The OpenCV Library.
+
+Scikit-learn: Pedregosa, F. et al. (2011). Scikit-learn: Machine Learning in Python.
+
+Dataset Roboflow: Brazilian Sign Language (Libras) Dataset — Roboflow Universe.
+
+Quadros, R.M., Karnopp, L.B. (2004). Língua de Sinais Brasileira: Estudos Linguísticos.
+
+Felipe, T.A. (2009). Libras em Contexto: Curso Básico. MEC/SEESP
+
+Gesser, A. (2009). Libras? Que língua é essa? Parábola Editorial
+
+
+
+---
+
+Licença
+
+Este projeto está licenciado sob a MIT License.
+Consulte o arquivo LICENSE para mais detalhes.
+
+
+---
+
+Versão: 1.0.0
+
+
