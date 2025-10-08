@@ -142,8 +142,7 @@ FPS	25–30
 
 Estrutura do Projeto
 
-```
-projeto-libras/
+```projeto-libras/
 ├── data/
 │   ├── raw/
 │   └── processed/
@@ -167,109 +166,102 @@ projeto-libras/
 
 ---
 
-Instalação
+# Instalação
 
-Pré-requisitos
+Pré-requisitos:
 
-Python 3.11
-
-Webcam funcional
-
-Sistema operacional: Linux, macOS ou Windows
-
-8 GB de RAM
+- Python 3.11
+- Webcam funcional
+- Sistema operacional: Linux, macOS ou Windows
+- 8 GB de RAM
 
 
 Passos
 
 # Clone o repositório
+```
 git clone https://github.com/caio2203/projeto-libras.git
 cd projeto-libras
+```
 
 # Crie e ative o ambiente virtual
+```
 python3.11 -m venv venv
 source venv/bin/activate   # Linux/macOS
 venv\Scripts\activate      # Windows
+```
 
 # Instale as dependências
+```
 pip install -r requirements.txt
-
+```
 
 ---
 
 Uso
 
 1. Baixar o dataset
-
+```
 pip install roboflow
 python download.py
+```
 
 2. Processar os dados
-
+```
 python src/process_coco_dataset.py Libras-2/
+```
 
 3. Treinar o modelo
-
+```
 python src/train_model.py
+```
 
 4. Executar a aplicação
-
+```
 python src/main.py
+```
 
 A webcam exibirá:
-
-Detecção de mãos
-
-Letra reconhecida
-
-FPS e confiança
+- Detecção de mãos
+- Letra reconhecida
+- FPS e confiança
 
 
 
 ---
 
-Resultados
-
-Métrica	Valor
+Resultados:
+```
+Métrica	Valor:
 
 Acurácia	90%
 FPS Médio	25–30
 Latência	<50ms
 Hardware	CPU comum (Intel i5)
 Erros comuns	M/N, A/S, E/O
-
+```
 
 
 ---
 
-Limitações e Trabalhos Futuros
+# Limitações e Trabalhos Futuros
 
 Limitações
 
-Apenas alfabeto manual estático
+- Apenas alfabeto manual estático
+- Uma mão por vez
+- Sensível à iluminação
+- Sem contexto linguístico
+- Dataset limitado
 
-Uma mão por vez
+Trabalhos Futuros:
 
-Sensível à iluminação
-
-Sem contexto linguístico
-
-Dataset limitado
-
-
-Trabalhos Futuros
-
-Suporte a duas mãos
-
-Reconhecimento de sinais dinâmicos
-
-Implementação de CNN + LSTM
-
-Interface web interativa
-
-Aplicativo mobile
-
-Tradução texto → Libras com avatar 3D
+- Suporte a duas mãos
+- Reconhecimento de sinais dinâmicos
+- Implementação de CNN + LSTM
+- Interface web interativa
+- Aplicativo mobile
+- Tradução texto → Libras com avatar 3D
 
 
 
