@@ -118,13 +118,10 @@ RandomForestClassifier(
 
 Motivos da escolha:
 
-Rápido e eficiente em CPU
-
-Robusto a overfitting
-
-Fácil de interpretar
-
-Adequado para datasets médios
+1. Rápido e eficiente em CPU
+2. Robusto a overfitting
+3. Fácil de interpretar
+4. Adequado para datasets médios
 
 
 Desempenho médio:
