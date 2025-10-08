@@ -113,7 +113,8 @@ RandomForestClassifier(
     min_samples_split=2,
     random_state=42,
     n_jobs=-1
-)```
+)
+```
 
 Motivos da escolha:
 
