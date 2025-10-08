@@ -35,6 +35,51 @@ O sistema captura vídeo via webcam, detecta mãos utilizando MediaPipe, extrai 
 - Manter acurácia superior a 85%  
 
 ---
+## Arquitetura do Sistema
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    STACK DE CAMADAS                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │           CAMADA DE CAPTURA                         │    │
+│  │  • OpenCV 4.8.1                                     │    │
+│  │  • Webcam Handler                                   │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                          ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │         CAMADA DE VISÃO COMPUTACIONAL               │    │
+│  │  • MediaPipe 0.10.8                                 │    │
+│  │  • Detecção de mãos                                 │    │
+│  │  • Extração de landmarks                            │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                          ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │      CAMADA DE PROCESSAMENTO                        │    │
+│  │  • NumPy 1.24.3                                     │    │
+│  │  • Normalização de dados                            │    │
+│  │  • Feature engineering                              │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                          ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │      CAMADA DE MACHINE LEARNING                     │    │
+│  │  • Scikit-learn 1.3.2                               │    │
+│  │  • Random Forest Classifier                         │    │
+│  │  • Acurácia: 85-95%                                 │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                          ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │         CAMADA DE APRESENTAÇÃO                      │    │
+│  │  • Interface em tempo real                          │    │
+│  │  • Feedback visual                                  │    │
+│  │  • Métricas de desempenho                           │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ### Fluxo de Processamento
 
