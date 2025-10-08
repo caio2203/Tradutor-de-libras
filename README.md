@@ -218,7 +218,7 @@ Pré-requisitos:
 - 8 GB de RAM
 
 
-Passos
+Passos:
 
 # Clone o repositório
 ```
