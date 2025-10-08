@@ -142,6 +142,7 @@ FPS	25–30
 
 Estrutura do Projeto
 
+```
 projeto-libras/
 ├── data/
 │   ├── raw/
@@ -162,7 +163,7 @@ projeto-libras/
 ├── tests/
 ├── requirements.txt
 └── README.md
-
+```
 
 ---
 
