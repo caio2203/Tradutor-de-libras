@@ -126,13 +126,13 @@ Motivos da escolha:
 
 Desempenho médio:
 
-Métrica	Valor
+```Métrica	Valor
 
 Acurácia	85–95%
 F1-Score	0.86–0.93
 Latência	<50ms
 FPS	25–30
-
+```
 
 
 ---
