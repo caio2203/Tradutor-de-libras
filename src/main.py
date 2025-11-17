@@ -42,7 +42,7 @@ class LibrasTranslator:
         Returns:
             True se inicializou com sucesso
         """
-        print("🚀 Inicializando Tradutor de Libras...")
+        print("Inicializando Tradutor de Libras...")
         
         # Carregar modelo
         if not self.classifier.load_model():
@@ -52,8 +52,8 @@ class LibrasTranslator:
         if not self.webcam.start():
             return False
         
-        print("✅ Sistema inicializado com sucesso!")
-        print("\n📋 INSTRUÇÕES:")
+        print("Sistema inicializado com sucesso!")
+        print("\n INSTRUÇÕES:")
         print("  - Faça sinais com a mão em frente à câmera")
         print("  - Mantenha o sinal por 1 segundo para registrar")
         print("  - Pressione ESPAÇO para limpar o texto")
@@ -154,7 +154,7 @@ class LibrasTranslator:
         self.last_letter = letter
         self.last_letter_time = current_time
         
-        print(f"📝 Letra detectada: {letter} | Texto: {self.detected_text}")
+        print(f"Letra detectada: {letter} | Texto: {self.detected_text}")
     
     def _draw_ui(self, frame, prediction, confidence, stable, hand_detected):
         """Desenha interface de usuário no frame."""
@@ -283,7 +283,7 @@ class LibrasTranslator:
     def run(self):
         """Executa o loop principal da aplicação."""
         if not self.initialize():
-            print("❌ Falha na inicialização")
+            print("Falha na inicialização")
             return
         
         try:
@@ -316,28 +316,28 @@ class LibrasTranslator:
                 # Limpar texto
                 elif key == 32:  # ESPAÇO
                     self.detected_text = ""
-                    print("🗑️  Texto limpo")
+                    print("Texto limpo")
                 
                 # Apagar última letra
                 elif key == 8:  # BACKSPACE
                     if self.detected_text:
                         self.detected_text = self.detected_text[:-1]
-                        print(f"⬅️  Apagado | Texto: {self.detected_text}")
+                        print(f"Apagado | Texto: {self.detected_text}")
         
         finally:
             self.cleanup()
     
     def cleanup(self):
         """Limpa recursos."""
-        print("\n🧹 Limpando recursos...")
+        print("\nLimpando recursos...")
         self.webcam.stop()
         self.detector.close()
         cv2.destroyAllWindows()
         
         if self.detected_text:
-            print(f"\n📝 Texto final: {self.detected_text}")
+            print(f"\nTexto final: {self.detected_text}")
         
-        print("✅ Encerrado com sucesso!")
+        print("Encerrado com sucesso!")
 
 
 if __name__ == "__main__":
