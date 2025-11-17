@@ -31,7 +31,7 @@ class LibrasClassifier:
             True se carregou com sucesso, False caso contrário
         """
         if not self.model_path.exists():
-            print(f"❌ Modelo não encontrado em: {self.model_path}")
+            print(f"Modelo não encontrado em: {self.model_path}")
             print("Execute primeiro: python src/train_model.py")
             return False
         
@@ -44,13 +44,13 @@ class LibrasClassifier:
             self.classes = model_data['classes']
             self.is_loaded = True
             
-            print(f"✅ Modelo carregado: {len(self.classes)} classes")
+            print(f"Modelo carregado: {len(self.classes)} classes")
             print(f"   Classes: {self.classes}")
             
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao carregar modelo: {e}")
+            print(f"Erro ao carregar modelo: {e}")
             return False
     
     def predict(self, landmarks: np.ndarray) -> Optional[Tuple[str, float]]:
@@ -64,7 +64,7 @@ class LibrasClassifier:
             Tupla (letra_predita, confiança) ou None se não conseguir prever
         """
         if not self.is_loaded:
-            print("⚠️  Modelo não carregado. Chame load_model() primeiro.")
+            print("Modelo não carregado. Chame load_model() primeiro.")
             return None
         
         if landmarks is None or len(landmarks) == 0:
@@ -86,5 +86,5 @@ class LibrasClassifier:
             return predicted_label, confidence
             
         except Exception as e:
-            print(f"❌ Erro na predição: {e}")
+            print(f"Erro na predição: {e}")
             return None
