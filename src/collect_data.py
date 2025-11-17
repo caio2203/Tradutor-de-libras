@@ -87,7 +87,7 @@ class DataCollector:
             # Selecionar letra (A-Z)
             elif 97 <= key <= 122:  # a-z
                 self.current_label = chr(key).upper()
-                print(f"\n📝 Letra selecionada: {self.current_label}")
+                print(f"\n Letra selecionada: {self.current_label}")
             
             # Coletar amostra (ESPAÇO)
             elif key == 32:  # ESPAÇO
@@ -99,12 +99,12 @@ class DataCollector:
                         samples_per_label[self.current_label] = 0
                     samples_per_label[self.current_label] += 1
                     
-                    print(f"✓ Amostra coletada para '{self.current_label}' "
+                    print(f"Amostra coletada para '{self.current_label}' "
                           f"(Total: {samples_per_label[self.current_label]})")
                 elif not self.current_label:
-                    print("⚠ Selecione uma letra primeiro (pressione A-Z)")
+                    print("Selecione uma letra primeiro (pressione A-Z)")
                 elif not landmarks:
-                    print("⚠ Nenhuma mão detectada")
+                    print("Nenhuma mão detectada")
         
         cv2.destroyAllWindows()
     
