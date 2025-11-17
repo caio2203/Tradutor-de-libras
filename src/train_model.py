@@ -34,7 +34,7 @@ class LibrasModelTrainer:
         
     def load_data(self):
         """Carrega os dados processados."""
-        print("📂 Carregando dados...")
+        print("Carregando dados...")
         
         if not self.data_path.exists():
             raise FileNotFoundError(
@@ -48,7 +48,7 @@ class LibrasModelTrainer:
         metadata = data['metadata']
         samples = data['samples']
         
-        print(f"✅ Dataset carregado:")
+        print(f"Dataset carregado:")
         print(f"   Total de amostras: {metadata['total_samples']}")
         print(f"   Número de classes: {metadata['num_classes']}")
         print(f"   Letras: {metadata['labels']}")
@@ -76,7 +76,7 @@ class LibrasModelTrainer:
             test_size: Proporção de dados para teste
             random_state: Seed para reprodutibilidade
         """
-        print("\n🔀 Preparando dados...")
+        print("\nPreparando dados...")
         
         # Codificar labels
         self.y_encoded = self.label_encoder.fit_transform(self.y)
@@ -90,7 +90,7 @@ class LibrasModelTrainer:
             stratify=self.y_encoded  # Manter proporção de classes
         )
         
-        print(f"✅ Dados preparados:")
+        print(f"Dados preparados:")
         print(f"   Treino: {len(self.X_train)} amostras")
         print(f"   Teste: {len(self.X_test)} amostras")
         print(f"   Features por amostra: {self.X_train.shape[1]}")
@@ -104,7 +104,7 @@ class LibrasModelTrainer:
             max_depth: Profundidade máxima das árvores
             min_samples_split: Mínimo de amostras para split
         """
-        print("\n🤖 Treinando modelo Random Forest...")
+        print("\nTreinando modelo Random Forest...")
         print(f"   Parâmetros:")
         print(f"   - n_estimators: {n_estimators}")
         print(f"   - max_depth: {max_depth}")
@@ -121,21 +121,21 @@ class LibrasModelTrainer:
         
         self.model.fit(self.X_train, self.y_train)
         
-        print("✅ Treinamento concluído!")
+        print("Treinamento concluído!")
     
     def evaluate(self):
         """Avalia o modelo nos dados de teste."""
-        print("\n📊 Avaliando modelo...")
+        print("\nAvaliando modelo...")
         
         # Predições
         y_pred = self.model.predict(self.X_test)
         
         # Acurácia
         accuracy = accuracy_score(self.y_test, y_pred)
-        print(f"\n🎯 Acurácia: {accuracy*100:.2f}%")
+        print(f"\nAcurácia: {accuracy*100:.2f}%")
         
         # Relatório de classificação
-        print("\n📈 Relatório de Classificação:")
+        print("\nRelatório de Classificação:")
         print("-" * 60)
         target_names = self.label_encoder.classes_
         print(classification_report(
@@ -174,7 +174,7 @@ class LibrasModelTrainer:
         output_path = Path("models")
         output_path.mkdir(exist_ok=True)
         plt.savefig(output_path / "confusion_matrix.png", dpi=150)
-        print(f"\n💾 Matriz de confusão salva em: models/confusion_matrix.png")
+        print(f"\nMatriz de confusão salva em: models/confusion_matrix.png")
         plt.close()
     
     def _plot_feature_importance(self):
@@ -196,7 +196,7 @@ class LibrasModelTrainer:
         
         output_path = Path("models")
         plt.savefig(output_path / "feature_importance.png", dpi=150)
-        print(f"💾 Feature importance salva em: models/feature_importance.png")
+        print(f"Feature importance salva em: models/feature_importance.png")
         plt.close()
     
     def save_model(self, model_path: str = "models/libras_classifier.pkl"):
@@ -219,13 +219,13 @@ class LibrasModelTrainer:
         with open(model_path, 'wb') as f:
             pickle.dump(model_data, f)
         
-        print(f"\n💾 Modelo salvo em: {model_path}")
+        print(f"\nModelo salvo em: {model_path}")
         print(f"   Classes: {model_data['classes']}")
     
     def run_full_pipeline(self):
         """Executa pipeline completo de treinamento."""
         print("="*60)
-        print("🚀 INICIANDO TREINAMENTO DO MODELO DE LIBRAS")
+        print("INICIANDO TREINAMENTO DO MODELO DE LIBRAS")
         print("="*60)
         
         # Carregar dados
@@ -244,12 +244,12 @@ class LibrasModelTrainer:
         self.save_model()
         
         print("\n" + "="*60)
-        print("✅ TREINAMENTO CONCLUÍDO COM SUCESSO!")
+        print("TREINAMENTO CONCLUÍDO COM SUCESSO!")
         print("="*60)
-        print(f"🎯 Acurácia final: {accuracy*100:.2f}%")
-        print(f"📊 Classes treinadas: {len(self.label_encoder.classes_)}")
-        print(f"💾 Modelo salvo: models/libras_classifier.pkl")
-        print("\n🎯 PRÓXIMOS PASSOS:")
+        print(f"Acurácia final: {accuracy*100:.2f}%")
+        print(f"Classes treinadas: {len(self.label_encoder.classes_)}")
+        print(f"Modelo salvo: models/libras_classifier.pkl")
+        print("\nPRÓXIMOS PASSOS:")
         print("1. Testar em tempo real: python src/main.py")
         print("2. Ver matriz de confusão: models/confusion_matrix.png")
         print("="*60)
