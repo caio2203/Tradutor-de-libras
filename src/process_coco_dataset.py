@@ -20,24 +20,24 @@ def process_coco_dataset(dataset_path: str):
     try:
         from vision.mediapipe_handler import HandDetector
     except ImportError:
-        print("❌ Erro ao importar HandDetector")
+        print("Erro ao importar HandDetector")
         print("Execute a partir da raiz do projeto")
         return
     
     dataset_path = Path(dataset_path)
     
     if not dataset_path.exists():
-        print(f"❌ Dataset não encontrado em: {dataset_path}")
+        print(f"Dataset não encontrado em: {dataset_path}")
         return
     
-    print(f"📂 Processando dataset COCO: {dataset_path}")
+    print(f"Processando dataset COCO: {dataset_path}")
     
     # Criar diretório de saída
     output_path = Path("data/processed")
     output_path.mkdir(parents=True, exist_ok=True)
     
     # Inicializar detector
-    print("🔧 Inicializando detector de mãos...")
+    print("Inicializando detector de mãos...")
     detector = HandDetector()
     
     all_samples = []
@@ -49,10 +49,10 @@ def process_coco_dataset(dataset_path: str):
         annotations_file = split_dir / "_annotations.coco.json"
         
         if not annotations_file.exists():
-            print(f"⚠️  Anotações não encontradas para '{split}', pulando...")
+            print(f"Anotações não encontradas para '{split}', pulando...")
             continue
         
-        print(f"\n📁 Processando split: {split}")
+        print(f"\nProcessando split: {split}")
         
         # Carregar anotações COCO
         with open(annotations_file, 'r') as f:
@@ -60,7 +60,7 @@ def process_coco_dataset(dataset_path: str):
         
         # Criar mapeamento de IDs para nomes de categorias
         categories = {cat['id']: cat['name'] for cat in coco_data['categories']}
-        print(f"  🔤 Categorias encontradas: {list(categories.values())}")
+        print(f"  Categorias encontradas: {list(categories.values())}")
         
         # Criar mapeamento de image_id para annotations
         image_annotations = {}
@@ -71,7 +71,7 @@ def process_coco_dataset(dataset_path: str):
             image_annotations[img_id].append(ann)
         
         # Processar cada imagem
-        print(f"  📸 Total de imagens: {len(coco_data['images'])}")
+        print(f"  Total de imagens: {len(coco_data['images'])}")
         
         for img_info in tqdm(coco_data['images'], desc=f"  Extraindo landmarks"):
             img_path = split_dir / img_info['file_name']
@@ -169,18 +169,18 @@ def process_coco_dataset(dataset_path: str):
             json.dump(data, f, indent=2, ensure_ascii=False)
         
         print(f"\n{'='*60}")
-        print(f"✅ PROCESSAMENTO CONCLUÍDO")
+        print(f"PROCESSAMENTO CONCLUÍDO")
         print(f"{'='*60}")
-        print(f"💾 Dados salvos em: {output_file}")
-        print(f"📊 Total de amostras: {total_stats['processed']}")
-        print(f"❌ Falharam: {total_stats['failed']}")
+        print(f"Dados salvos em: {output_file}")
+        print(f"Total de amostras: {total_stats['processed']}")
+        print(f"Falharam: {total_stats['failed']}")
         
         if total_stats['processed'] > 0:
             success_rate = total_stats['processed']/(total_stats['processed']+total_stats['failed'])*100
-            print(f"📈 Taxa de sucesso: {success_rate:.1f}%")
+            print(f"Taxa de sucesso: {success_rate:.1f}%")
         
-        print(f"🔤 Letras detectadas ({len(total_stats['by_label'])}): {sorted(total_stats['by_label'].keys())}")
-        print(f"\n📊 Distribuição por letra:")
+        print(f"Letras detectadas ({len(total_stats['by_label'])}): {sorted(total_stats['by_label'].keys())}")
+        print(f"\nDistribuição por letra:")
         
         for letter in sorted(total_stats['by_label'].keys()):
             count = total_stats['by_label'][letter]
@@ -188,12 +188,12 @@ def process_coco_dataset(dataset_path: str):
             print(f"  {letter}: {count:4d} {bar}")
         
         print(f"\n{'='*60}")
-        print("🎯 PRÓXIMOS PASSOS:")
+        print("PRÓXIMOS PASSOS:")
         print("1. Treinar o modelo: python src/train_model.py")
         print("2. Testar em tempo real: python src/main.py")
         print("="*60)
     else:
-        print("\n❌ Nenhuma amostra foi processada com sucesso!")
+        print("\nNenhuma amostra foi processada com sucesso!")
     
     detector.close()
 
@@ -233,9 +233,9 @@ if __name__ == "__main__":
                 break
         
         if dataset_path is None:
-            print("❌ Dataset não encontrado!")
+            print("Dataset não encontrado!")
             print("\nUso: python src/process_coco_dataset.py <caminho-do-dataset>")
             sys.exit(1)
     
-    print("🚀 Iniciando processamento do dataset COCO...")
+    print("Iniciando processamento do dataset COCO...")
     process_coco_dataset(dataset_path)
