@@ -222,7 +222,7 @@ Passos:
 
 # Clone o repositório
 ```
-git clone https://github.com/caio2203/projeto-libras.git
+git clone https://github.com/caio2203/Tradutor-de-libras.git
 cd projeto-libras
 ```
 
